@@ -1,23 +1,29 @@
 
-from django.shortcuts import get_object_or_404
+from typing import cast
+
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.exceptions import ValidationError
-from typing import cast
+
 from accounts.permissions import IsTPO
 
-from .models import JobApplication
+from .models import (
+    JobApplication,
+    RecruitmentRound,
+    StudentRoundResult,
+)
+
 from .tpo_serializers import (
     TPOApplicationSerializer,
     ApplicationStatusSerializer,
 )
 
 
-# TPO can view all student applications
 class TPOApplicationListView(APIView):
 
     authentication_classes = [SessionAuthentication]
@@ -39,7 +45,6 @@ class TPOApplicationListView(APIView):
         return Response(serializer.data)
 
 
-# TPO can update application status
 class TPOApplicationStatusView(APIView):
 
     authentication_classes = [SessionAuthentication]
@@ -50,11 +55,12 @@ class TPOApplicationStatusView(APIView):
         serializer = ApplicationStatusSerializer(
             data=request.data
         )
-
         serializer.is_valid(raise_exception=True)
 
-        validated_data = cast(dict[str, str], serializer.validated_data)
-
+        validated_data = cast(
+            dict[str, str],
+            serializer.validated_data
+        )
         new_status = validated_data["status"]
 
         with transaction.atomic():
@@ -64,24 +70,70 @@ class TPOApplicationStatusView(APIView):
                 pk=application_id
             )
 
-            allowed_transitions = {
-                "APPLIED": ["SHORTLISTED", "REJECTED"],
-                "SHORTLISTED": ["SELECTED", "REJECTED"],
-                "REJECTED": [],
-                "SELECTED": [],
-            }
-
             current_status = application.status
 
-            if new_status not in allowed_transitions.get(
-                current_status, []
-            ):
+            allowed_transitions = {
+                JobApplication.Status.APPLIED: [
+                    JobApplication.Status.SHORTLISTED,
+                    JobApplication.Status.REJECTED,
+                ],
+                JobApplication.Status.SHORTLISTED: [
+                    JobApplication.Status.SELECTED,
+                    JobApplication.Status.REJECTED,
+                ],
+                JobApplication.Status.IN_PROGRESS: [
+                    JobApplication.Status.SELECTED,
+                    JobApplication.Status.REJECTED,
+                ],
+                JobApplication.Status.REJECTED: [],
+                JobApplication.Status.SELECTED: [],
+            }
+
+            allowed_transitions: dict[str, list[str]] = {
+            "APPLIED": ["SHORTLISTED", "REJECTED"],
+            "SHORTLISTED": ["SELECTED", "REJECTED"],
+            "IN_PROGRESS": ["SELECTED", "REJECTED"],
+            "REJECTED": [],
+            "SELECTED": [],
+}
+
+            current_status: str = application.status
+
+            if new_status not in allowed_transitions.get(current_status, []):
                 raise ValidationError({
                     "detail": (
                         f"Cannot change status from "
                         f"{current_status} to {new_status}."
                     )
                 })
+
+            rounds = RecruitmentRound.objects.filter(
+                drive=application.drive
+            )
+
+            # Validate final selection
+            if new_status == JobApplication.Status.SELECTED:
+
+                if rounds.exists():
+
+                    total_rounds = rounds.count()
+
+                    qualified_rounds = (
+                        StudentRoundResult.objects.filter(
+                            application=application,
+                            round__drive=application.drive,
+                            result=StudentRoundResult.Result.QUALIFIED
+                        ).count()
+                    )
+
+                    if qualified_rounds != total_rounds:
+                        raise ValidationError({
+                            "detail": (
+                                "Student must qualify all "
+                                "recruitment rounds before "
+                                "final selection."
+                            )
+                        })
 
             application.status = new_status
 
