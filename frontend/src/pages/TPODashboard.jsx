@@ -20,11 +20,11 @@ import api, { initializeCSRF } from "../api/axios";
 const dashboardCards = [
   {
     title: "Total Students",
-    description: "View registered students",
+    description: "Manage student accounts and profiles",
     icon: GraduationCap,
     key: "total_students",
-    link: null,
-    linkText: null,
+    link: "/tpo/students",
+    linkText: "Manage Students",
   },
   {
     title: "Companies",
@@ -49,6 +49,43 @@ const dashboardCards = [
     key: "total_applications",
     link: "/tpo/applications",
     linkText: "Manage Applications",
+  },
+];
+
+// ==========================================
+// PLACEMENT WORKFLOW CONFIGURATION
+// ==========================================
+
+const workflowSteps = [
+  {
+    step: "01",
+    title: "Manage Students",
+    description: "Register students and manage account access.",
+  },
+  {
+    step: "02",
+    title: "Add Companies",
+    description: "Register recruiting companies.",
+  },
+  {
+    step: "03",
+    title: "Create Drives",
+    description: "Publish placement opportunities.",
+  },
+  {
+    step: "04",
+    title: "Review Applications",
+    description: "Review and shortlist eligible candidates.",
+  },
+  {
+    step: "05",
+    title: "Manage Recruitment",
+    description: "Conduct and evaluate recruitment rounds.",
+  },
+  {
+    step: "06",
+    title: "Select Students",
+    description: "Finalize placement decisions.",
   },
 ];
 
@@ -83,7 +120,6 @@ function TPODashboard() {
 
         setStats(response.data);
         setError("");
-
       } catch (err) {
         if (!active) return;
 
@@ -92,10 +128,7 @@ function TPODashboard() {
           err
         );
 
-        if (
-          err.response?.status === 401 ||
-          err.response?.status === 403
-        ) {
+        if ([401, 403].includes(err.response?.status)) {
           navigate("/login", {
             replace: true,
           });
@@ -105,7 +138,6 @@ function TPODashboard() {
         setError(
           "Unable to load dashboard statistics."
         );
-
       } finally {
         if (active) {
           setLoading(false);
@@ -131,19 +163,15 @@ function TPODashboard() {
     setError("");
 
     try {
-      // Get CSRF cookie
       await initializeCSRF();
 
-      // End Django session
       await api.post(
         "accounts/logout/"
       );
 
-      // Redirect to login
       navigate("/login", {
         replace: true,
       });
-
     } catch (err) {
       console.error(
         "Logout error:",
@@ -153,7 +181,6 @@ function TPODashboard() {
       setError(
         "Unable to log out. Please try again."
       );
-
     } finally {
       setLoggingOut(false);
     }
@@ -166,15 +193,11 @@ function TPODashboard() {
   return (
     <div className="min-h-screen bg-red-50">
 
-      {/* ======================================
-          NAVIGATION BAR
-      ====================================== */}
+      {/* NAVIGATION BAR */}
 
       <nav className="bg-white border-b border-red-100 px-6 py-4">
-
         <div className="max-w-6xl mx-auto flex justify-between items-center gap-4">
 
-          {/* Portal Name */}
           <div>
             <h1 className="text-xl font-bold text-red-600">
               Placement Portal
@@ -185,7 +208,6 @@ function TPODashboard() {
             </p>
           </div>
 
-          {/* Logout Button */}
           <button
             type="button"
             onClick={handleLogout}
@@ -202,29 +224,24 @@ function TPODashboard() {
         </div>
       </nav>
 
-      {/* ======================================
-          MAIN CONTENT
-      ====================================== */}
+      {/* MAIN CONTENT */}
 
       <main className="max-w-6xl mx-auto p-6">
 
-        {/* Dashboard Heading */}
-        <div className="mb-8">
+        {/* DASHBOARD HEADING */}
 
+        <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900">
             TPO Dashboard
           </h2>
 
           <p className="text-gray-500 mt-2">
-            Manage student placements, companies,
-            recruitment drives and applications.
+            Manage students, companies, recruitment drives,
+            applications and placement decisions.
           </p>
-
         </div>
 
-        {/* ======================================
-            ERROR MESSAGE
-        ====================================== */}
+        {/* ERROR MESSAGE */}
 
         {error && (
           <div
@@ -235,9 +252,7 @@ function TPODashboard() {
           </div>
         )}
 
-        {/* ======================================
-            STATISTICS CARDS
-        ====================================== */}
+        {/* STATISTICS CARDS */}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
@@ -254,46 +269,42 @@ function TPODashboard() {
                 className="bg-white border border-red-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col"
               >
 
-                {/* Card Icon */}
-                <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mb-4">
+                {/* CARD ICON */}
 
+                <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center mb-4">
                   <Icon
                     size={24}
                     className="text-red-600"
                   />
-
                 </div>
 
-                {/* Card Title */}
+                {/* CARD TITLE */}
+
                 <h3 className="font-bold text-gray-900">
                   {card.title}
                 </h3>
 
-                {/* Card Description */}
+                {/* CARD DESCRIPTION */}
+
                 <p className="text-sm text-gray-500 mt-2 min-h-10">
                   {card.description}
                 </p>
 
-                {/* Dynamic Statistics */}
+                {/* DYNAMIC STATISTICS */}
+
                 <p className="text-3xl font-bold text-red-600 mt-4">
                   {count}
                 </p>
 
-                {/* Navigation Link */}
-                {card.link ? (
-                  <Link
-                    to={card.link}
-                    className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-red-600 hover:underline"
-                  >
-                    {card.linkText}
+                {/* NAVIGATION LINK */}
 
-                    <ArrowRight size={16} />
-                  </Link>
-                ) : (
-                  <p className="mt-5 text-xs text-gray-400">
-                    Student management coming soon
-                  </p>
-                )}
+                <Link
+                  to={card.link}
+                  className="inline-flex items-center gap-2 mt-5 text-sm font-semibold text-red-600 hover:underline"
+                >
+                  {card.linkText}
+                  <ArrowRight size={16} />
+                </Link>
 
               </div>
             );
@@ -301,9 +312,7 @@ function TPODashboard() {
 
         </div>
 
-        {/* ======================================
-            PLACEMENT MANAGEMENT SECTION
-        ====================================== */}
+        {/* PLACEMENT MANAGEMENT SECTION */}
 
         <div className="mt-8 bg-white border border-red-100 rounded-xl p-6 shadow-sm">
 
@@ -312,17 +321,26 @@ function TPODashboard() {
           </h3>
 
           <p className="text-gray-600 text-sm leading-6">
-            Manage recruiting companies, create placement
-            drives, review student applications, and track
+            Manage student accounts, register recruiting companies,
+            create placement drives, review applications, and track
             recruitment progress from one dashboard.
           </p>
 
-          {/* Quick Actions */}
+          {/* QUICK ACTIONS */}
+
           <div className="flex flex-wrap gap-3 mt-5">
 
             <Link
-              to="/tpo/companies"
+              to="/tpo/students"
               className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 font-medium transition"
+            >
+              <GraduationCap size={17} />
+              Manage Students
+            </Link>
+
+            <Link
+              to="/tpo/companies"
+              className="inline-flex items-center gap-2 border border-red-600 text-red-600 px-5 py-2 rounded-lg hover:bg-red-50 font-medium transition"
             >
               <Building2 size={17} />
               Manage Companies
@@ -345,12 +363,9 @@ function TPODashboard() {
             </Link>
 
           </div>
-
         </div>
 
-        {/* ======================================
-            WORKFLOW INFORMATION
-        ====================================== */}
+        {/* PLACEMENT WORKFLOW SECTION */}
 
         <div className="mt-6 bg-white border border-red-100 rounded-xl p-6 shadow-sm">
 
@@ -358,30 +373,9 @@ function TPODashboard() {
             Placement Workflow
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-            {[
-              {
-                step: "01",
-                title: "Add Companies",
-                description: "Register recruiting companies.",
-              },
-              {
-                step: "02",
-                title: "Create Drives",
-                description: "Publish placement opportunities.",
-              },
-              {
-                step: "03",
-                title: "Review Applications",
-                description: "Shortlist or reject candidates.",
-              },
-              {
-                step: "04",
-                title: "Select Students",
-                description: "Finalize recruitment decisions.",
-              },
-            ].map((item) => (
+            {workflowSteps.map((item) => (
               <div
                 key={item.step}
                 className="bg-red-50 border border-red-100 rounded-lg p-4"
@@ -401,7 +395,6 @@ function TPODashboard() {
             ))}
 
           </div>
-
         </div>
 
       </main>

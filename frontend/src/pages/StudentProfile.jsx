@@ -6,31 +6,43 @@ import api, { initializeCSRF } from "../api/axios";
 function StudentProfile() {
   const navigate = useNavigate();
 
-  // Student information
+  // ==========================================
+  // STUDENT INFORMATION
+  // ==========================================
+
   const [student, setStudent] = useState(null);
 
-  // Editable profile fields
   const [formData, setFormData] = useState({
     full_name: "",
     cgpa: "",
     phone_number: "",
   });
 
-  // Resume upload
+  // ==========================================
+  // RESUME STATES
+  // ==========================================
+
   const [resumeFile, setResumeFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const fileInputRef = useRef(null);
 
-  // UI states
+  // ==========================================
+  // UI STATES
+  // ==========================================
+
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Fetch student profile from Django
+  // ==========================================
+  // FETCH STUDENT PROFILE
+  // ==========================================
+
   useEffect(() => {
     let active = true;
 
@@ -64,9 +76,7 @@ function StudentProfile() {
 
         setError("Unable to load student profile.");
       } finally {
-        if (active) {
-          setLoading(false);
-        }
+        if (active) setLoading(false);
       }
     };
 
@@ -77,19 +87,25 @@ function StudentProfile() {
     };
   }, [navigate]);
 
-  // Update controlled form inputs
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  // ==========================================
+  // UPDATE FORM FIELDS
+  // ==========================================
 
-    setFormData((prev) => ({
-      ...prev,
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+
+    setFormData((previous) => ({
+      ...previous,
       [name]: value,
     }));
   };
 
-  // Save profile information
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ==========================================
+  // SAVE PROFILE
+  // ==========================================
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     setSaving(true);
     setError("");
@@ -103,7 +119,8 @@ function StudentProfile() {
         formData
       );
 
-      const updatedProfile = response.data.profile;
+      const updatedProfile =
+        response.data.profile ?? response.data;
 
       setStudent(updatedProfile);
 
@@ -148,7 +165,10 @@ function StudentProfile() {
     }
   };
 
-  // Cancel profile editing
+  // ==========================================
+  // CANCEL EDITING
+  // ==========================================
+
   const handleCancel = () => {
     setFormData({
       full_name: student.full_name ?? "",
@@ -160,9 +180,12 @@ function StudentProfile() {
     setError("");
   };
 
-  // Select resume file
-  const handleResumeChange = (e) => {
-    const file = e.target.files?.[0] ?? null;
+  // ==========================================
+  // SELECT RESUME FILE
+  // ==========================================
+
+  const handleResumeChange = (event) => {
+    const file = event.target.files?.[0] ?? null;
 
     setResumeFile(null);
     setError("");
@@ -176,20 +199,23 @@ function StudentProfile() {
       !file.name.toLowerCase().endsWith(".pdf")
     ) {
       setError("Please select a valid PDF file.");
-      e.target.value = "";
+      event.target.value = "";
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       setError("Resume size must be 5 MB or smaller.");
-      e.target.value = "";
+      event.target.value = "";
       return;
     }
 
     setResumeFile(file);
   };
 
-  // Upload resume to Django
+  // ==========================================
+  // UPLOAD RESUME
+  // ==========================================
+
   const handleResumeUpload = async () => {
     if (!resumeFile) {
       setError("Please select a resume first.");
@@ -223,7 +249,8 @@ function StudentProfile() {
         }
       );
 
-      const updatedProfile = response.data.profile;
+      const updatedProfile =
+        response.data.profile ?? response.data;
 
       setStudent(updatedProfile);
       setResumeFile(null);
@@ -254,14 +281,115 @@ function StudentProfile() {
             : String(details.resume)
         );
       } else {
-        setError("Unable to upload resume. Please try again.");
+        setError(
+          "Unable to upload resume. Please try again."
+        );
       }
     } finally {
       setUploading(false);
     }
   };
 
-  // Loading screen
+  // ==========================================
+  // SECURE RESUME DOWNLOAD
+  // ==========================================
+
+  const handleResumeDownload = async () => {
+    if (!student?.id || downloading) return;
+
+    setDownloading(true);
+    setError("");
+    setSuccess("");
+
+    let blobUrl = null;
+
+    try {
+      const response = await api.get(
+        `students/resumes/${student.id}/`,
+        {
+          responseType: "blob",
+        }
+      );
+
+      const contentType =
+        response.headers["content-type"] ||
+        "application/pdf";
+
+      const blob = new Blob(
+        [response.data],
+        { type: contentType }
+      );
+
+      blobUrl = window.URL.createObjectURL(blob);
+
+      const disposition =
+        response.headers["content-disposition"] ?? "";
+
+      const utf8Match = disposition.match(
+        /filename\*=UTF-8''([^;]+)/i
+      );
+
+      const normalMatch = disposition.match(
+        /filename="?([^";]+)"?/i
+      );
+
+      let filename = `student_${student.id}_resume.pdf`;
+
+      if (utf8Match) {
+        try {
+          filename = decodeURIComponent(
+            utf8Match[1].trim()
+          );
+        } catch {
+          // Keep the fallback filename.
+        }
+      } else if (normalMatch) {
+        filename = normalMatch[1].trim();
+      }
+
+      const link = document.createElement("a");
+
+      link.href = blobUrl;
+      link.download = filename;
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setSuccess("Resume download started.");
+    } catch (err) {
+      console.error("Resume download error:", err);
+
+      const status = err.response?.status;
+
+      if (status === 401 || status === 403) {
+        setError(
+          "Resume access denied. Please check your login."
+        );
+      } else if (status === 404) {
+        setError(
+          "Resume file not found on the server."
+        );
+      } else {
+        setError(
+          "Unable to download resume. Please try again."
+        );
+      }
+    } finally {
+      if (blobUrl) {
+        window.setTimeout(() => {
+          window.URL.revokeObjectURL(blobUrl);
+        }, 1000);
+      }
+
+      setDownloading(false);
+    }
+  };
+
+  // ==========================================
+  // LOADING SCREEN
+  // ==========================================
+
   if (loading) {
     return (
       <div className="min-h-screen bg-red-50 p-8">
@@ -272,7 +400,10 @@ function StudentProfile() {
     );
   }
 
-  // Error screen
+  // ==========================================
+  // ERROR SCREEN
+  // ==========================================
+
   if (!student) {
     return (
       <div className="min-h-screen bg-red-50 p-8">
@@ -282,6 +413,10 @@ function StudentProfile() {
       </div>
     );
   }
+
+  // ==========================================
+  // PROFILE FIELDS
+  // ==========================================
 
   const fields = [
     ["Full Name", student.full_name],
@@ -295,19 +430,18 @@ function StudentProfile() {
     ["Phone Number", student.phone_number],
   ];
 
-  // Convert relative resume URL to backend URL
-  const resumeUrl = student.resume
-    ? new URL(
-        student.resume,
-        api.defaults.baseURL
-      ).href
-    : null;
+  const hasResume = Boolean(student.resume);
+
+  // ==========================================
+  // RENDER
+  // ==========================================
 
   return (
     <div className="min-h-screen bg-red-50 p-6">
       <div className="max-w-3xl mx-auto">
 
-        {/* Back Navigation */}
+        {/* BACK NAVIGATION */}
+
         <Link
           to="/dashboard"
           className="text-red-600 font-semibold hover:underline"
@@ -315,10 +449,12 @@ function StudentProfile() {
           ← Back to Dashboard
         </Link>
 
-        {/* Profile Card */}
+        {/* PROFILE CARD */}
+
         <div className="bg-white rounded-xl shadow-sm border border-red-100 p-6 mt-6">
 
           <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+
             <h1 className="text-2xl font-bold text-red-600">
               My Student Profile
             </h1>
@@ -331,15 +467,16 @@ function StudentProfile() {
                   setError("");
                   setSuccess("");
                 }}
-                disabled={uploading}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60 cursor-pointer"
+                disabled={uploading || downloading}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60"
               >
                 Edit Profile
               </button>
             )}
           </div>
 
-          {/* Success Message */}
+          {/* SUCCESS MESSAGE */}
+
           {success && (
             <p
               role="status"
@@ -349,7 +486,8 @@ function StudentProfile() {
             </p>
           )}
 
-          {/* Error Message */}
+          {/* ERROR MESSAGE */}
+
           {error && (
             <p
               role="alert"
@@ -359,9 +497,11 @@ function StudentProfile() {
             </p>
           )}
 
+          {/* PROFILE VIEW MODE */}
+
           {!editing ? (
-            // View Mode
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
               {fields.map(([label, value]) => (
                 <div
                   key={label}
@@ -380,15 +520,19 @@ function StudentProfile() {
                   </p>
                 </div>
               ))}
+
             </div>
           ) : (
-            // Edit Mode
+
+            /* PROFILE EDIT MODE */
+
             <form
               onSubmit={handleSubmit}
               className="space-y-5"
             >
 
-              {/* Full Name */}
+              {/* FULL NAME */}
+
               <div>
                 <label
                   htmlFor="full_name"
@@ -409,6 +553,7 @@ function StudentProfile() {
               </div>
 
               {/* CGPA */}
+
               <div>
                 <label
                   htmlFor="cgpa"
@@ -431,7 +576,8 @@ function StudentProfile() {
                 />
               </div>
 
-              {/* Phone Number */}
+              {/* PHONE NUMBER */}
+
               <div>
                 <label
                   htmlFor="phone_number"
@@ -450,29 +596,38 @@ function StudentProfile() {
                 />
               </div>
 
-              {/* Save and Cancel */}
+              {/* SAVE / CANCEL */}
+
               <div className="flex flex-wrap gap-3">
+
                 <button
                   type="submit"
-                  disabled={saving || uploading}
-                  className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60 cursor-pointer"
+                  disabled={saving || uploading || downloading}
+                  className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60"
                 >
-                  {saving ? "Saving..." : "Save Changes"}
+                  {saving
+                    ? "Saving..."
+                    : "Save Changes"}
                 </button>
 
                 <button
                   type="button"
                   onClick={handleCancel}
                   disabled={saving || uploading}
-                  className="border border-gray-300 px-5 py-2 rounded-lg hover:bg-gray-100 disabled:opacity-60 cursor-pointer"
+                  className="border border-gray-300 px-5 py-2 rounded-lg hover:bg-gray-100 disabled:opacity-60"
                 >
                   Cancel
                 </button>
+
               </div>
+
             </form>
           )}
 
-          {/* Resume Section */}
+          {/* ======================================
+              RESUME SECTION
+          ====================================== */}
+
           <div className="mt-8 pt-6 border-t border-gray-200">
 
             <h2 className="text-xl font-semibold text-red-600 mb-2">
@@ -481,23 +636,33 @@ function StudentProfile() {
 
             <p className="text-sm text-gray-500 mb-4">
               Upload a PDF resume (maximum 5 MB).
+              Only authorized users can download it.
             </p>
 
-            {/* Existing Resume */}
-            {resumeUrl ? (
+            {/* EXISTING RESUME */}
+
+            {hasResume ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-5">
-                <p className="text-green-700 font-medium mb-2">
-                  Resume uploaded
+
+                <p className="text-green-700 font-medium mb-3">
+                  Resume uploaded successfully
                 </p>
 
-                <a
-                  href={resumeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-red-600 font-semibold hover:underline"
+                <button
+                  type="button"
+                  onClick={handleResumeDownload}
+                  disabled={downloading || uploading || saving}
+                  className="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60"
                 >
-                  View Resume →
-                </a>
+                  {downloading
+                    ? "Downloading..."
+                    : "↓ Download My Resume"}
+                </button>
+
+                <p className="text-xs text-gray-500 mt-3">
+                  Secure download through your authenticated account.
+                </p>
+
               </div>
             ) : (
               <p className="text-gray-500 mb-5">
@@ -505,49 +670,64 @@ function StudentProfile() {
               </p>
             )}
 
-            {/* File Input */}
+            {/* FILE INPUT */}
+
             <input
               ref={fileInputRef}
               type="file"
               accept=".pdf,application/pdf"
               onChange={handleResumeChange}
-              disabled={uploading || saving}
+              disabled={uploading || saving || downloading}
               className="block w-full border border-gray-300 rounded-lg p-3 text-sm"
             />
 
-            {/* Selected File */}
+            {/* SELECTED FILE */}
+
             {resumeFile && (
               <p className="text-sm text-gray-600 mt-3">
                 Selected: {resumeFile.name}
               </p>
             )}
 
-            {/* Upload Progress */}
+            {/* UPLOAD PROGRESS */}
+
             {uploading && (
               <div className="mt-4">
+
                 <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+
                   <div
                     className="bg-red-600 h-2 rounded-full transition-all"
-                    style={{ width: `${uploadProgress}%` }}
+                    style={{
+                      width: `${uploadProgress}%`,
+                    }}
                   />
+
                 </div>
 
                 <p className="text-sm text-gray-500 mt-2">
                   {uploadProgress}% transferred
                 </p>
+
               </div>
             )}
 
-            {/* Upload Button */}
+            {/* UPLOAD / REPLACE BUTTON */}
+
             <button
               type="button"
               onClick={handleResumeUpload}
-              disabled={!resumeFile || uploading || saving}
-              className="mt-4 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60 cursor-pointer"
+              disabled={
+                !resumeFile ||
+                uploading ||
+                saving ||
+                downloading
+              }
+              className="mt-4 bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 disabled:opacity-60"
             >
               {uploading
                 ? "Uploading..."
-                : resumeUrl
+                : hasResume
                 ? "Replace Resume"
                 : "Upload Resume"}
             </button>

@@ -6,6 +6,7 @@ import {
   Plus,
   Pencil,
   Trash2,
+  ListChecks,
 } from "lucide-react";
 
 import api, { initializeCSRF } from "../api/axios";
@@ -255,7 +256,7 @@ function PlacementDriveManagement() {
               Placement Drive Management
             </h1>
             <p className="text-gray-500 mt-2">
-              Create and manage recruitment opportunities.
+              Create placement drives and manage recruitment rounds.
             </p>
           </div>
 
@@ -271,13 +272,19 @@ function PlacementDriveManagement() {
         </div>
 
         {error && (
-          <p role="alert" className="bg-red-100 text-red-700 p-3 rounded-lg mb-5">
+          <p
+            role="alert"
+            className="bg-red-100 text-red-700 p-3 rounded-lg mb-5"
+          >
             {error}
           </p>
         )}
 
         {success && (
-          <p role="status" className="bg-green-100 text-green-700 p-3 rounded-lg mb-5">
+          <p
+            role="status"
+            className="bg-green-100 text-green-700 p-3 rounded-lg mb-5"
+          >
             {success}
           </p>
         )}
@@ -285,7 +292,10 @@ function PlacementDriveManagement() {
         {!loading && companies.length === 0 && (
           <p className="bg-white border border-red-100 rounded-lg p-4 mb-5">
             Add a company before creating a placement drive.{" "}
-            <Link to="/tpo/companies" className="text-red-600 font-semibold hover:underline">
+            <Link
+              to="/tpo/companies"
+              className="text-red-600 font-semibold hover:underline"
+            >
               Manage Companies →
             </Link>
           </p>
@@ -303,11 +313,15 @@ function PlacementDriveManagement() {
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                {/* Company Dropdown */}
+                {/* Company */}
                 <div>
-                  <label htmlFor="company" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="company"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Company
                   </label>
+
                   <select
                     id="company"
                     name="company"
@@ -317,6 +331,7 @@ function PlacementDriveManagement() {
                     className="w-full border border-gray-300 rounded-lg p-3"
                   >
                     <option value="">Select Company</option>
+
                     {companies.map((company) => (
                       <option key={company.id} value={company.id}>
                         {company.name}
@@ -327,9 +342,13 @@ function PlacementDriveManagement() {
 
                 {/* Job Title */}
                 <div>
-                  <label htmlFor="job_title" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="job_title"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Job Title
                   </label>
+
                   <input
                     id="job_title"
                     name="job_title"
@@ -344,9 +363,13 @@ function PlacementDriveManagement() {
 
                 {/* Job Location */}
                 <div>
-                  <label htmlFor="job_location" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="job_location"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Job Location
                   </label>
+
                   <input
                     id="job_location"
                     name="job_location"
@@ -360,9 +383,13 @@ function PlacementDriveManagement() {
 
                 {/* Package */}
                 <div>
-                  <label htmlFor="package_lpa" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="package_lpa"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Package (LPA)
                   </label>
+
                   <input
                     id="package_lpa"
                     name="package_lpa"
@@ -379,9 +406,13 @@ function PlacementDriveManagement() {
 
                 {/* Minimum CGPA */}
                 <div>
-                  <label htmlFor="minimum_cgpa" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="minimum_cgpa"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Minimum CGPA
                   </label>
+
                   <input
                     id="minimum_cgpa"
                     name="minimum_cgpa"
@@ -399,9 +430,13 @@ function PlacementDriveManagement() {
 
                 {/* Eligible Courses */}
                 <div>
-                  <label htmlFor="eligible_courses" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="eligible_courses"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Eligible Courses
                   </label>
+
                   <input
                     id="eligible_courses"
                     name="eligible_courses"
@@ -416,9 +451,13 @@ function PlacementDriveManagement() {
 
                 {/* Deadline */}
                 <div>
-                  <label htmlFor="application_deadline" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="application_deadline"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Application Deadline
                   </label>
+
                   <input
                     id="application_deadline"
                     name="application_deadline"
@@ -432,9 +471,13 @@ function PlacementDriveManagement() {
 
                 {/* Status */}
                 <div>
-                  <label htmlFor="status" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="status"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Status
                   </label>
+
                   <select
                     id="status"
                     name="status"
@@ -449,11 +492,15 @@ function PlacementDriveManagement() {
                 </div>
               </div>
 
-              {/* Job Description */}
+              {/* Description */}
               <div>
-                <label htmlFor="job_description" className="block text-sm font-medium mb-2">
+                <label
+                  htmlFor="job_description"
+                  className="block text-sm font-medium mb-2"
+                >
                   Job Description
                 </label>
+
                 <textarea
                   id="job_description"
                   name="job_description"
@@ -493,17 +540,20 @@ function PlacementDriveManagement() {
           </div>
         )}
 
-        {/* Drive List */}
+        {/* Placement Drives List */}
         <div className="bg-white border border-red-100 rounded-xl shadow-sm overflow-hidden">
           <div className="p-5 border-b border-gray-100 flex items-center gap-2">
             <BriefcaseBusiness size={20} className="text-red-600" />
+
             <h2 className="font-bold">
               Placement Drives ({drives.length})
             </h2>
           </div>
 
           {loading ? (
-            <p className="p-6 text-gray-500">Loading placement drives...</p>
+            <p className="p-6 text-gray-500">
+              Loading placement drives...
+            </p>
           ) : drives.length === 0 ? (
             <p className="p-6 text-gray-500">
               No placement drives added yet.
@@ -525,12 +575,17 @@ function PlacementDriveManagement() {
 
                 <tbody>
                   {drives.map((drive) => (
-                    <tr key={drive.id} className="border-t border-gray-100">
+                    <tr
+                      key={drive.id}
+                      className="border-t border-gray-100"
+                    >
                       <td className="p-4 font-medium">
                         {drive.company_name}
                       </td>
 
-                      <td className="p-4">{drive.job_title}</td>
+                      <td className="p-4">
+                        {drive.job_title}
+                      </td>
 
                       <td className="p-4">
                         {drive.package_lpa} LPA
@@ -551,7 +606,18 @@ function PlacementDriveManagement() {
                       </td>
 
                       <td className="p-4">
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-3">
+
+                          {/* NEW: Manage Rounds */}
+                          <Link
+                            to={`/tpo/drives/${drive.id}/rounds`}
+                            className="flex items-center gap-1 text-purple-600 hover:underline whitespace-nowrap"
+                          >
+                            <ListChecks size={16} />
+                            Manage Rounds
+                          </Link>
+
+                          {/* Edit */}
                           <button
                             type="button"
                             onClick={() => openEditForm(drive)}
@@ -562,6 +628,7 @@ function PlacementDriveManagement() {
                             Edit
                           </button>
 
+                          {/* Delete */}
                           <button
                             type="button"
                             onClick={() => handleDelete(drive)}
@@ -573,6 +640,7 @@ function PlacementDriveManagement() {
                               ? "Deleting..."
                               : "Delete"}
                           </button>
+
                         </div>
                       </td>
                     </tr>
@@ -582,7 +650,6 @@ function PlacementDriveManagement() {
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

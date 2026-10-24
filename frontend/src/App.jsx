@@ -1,7 +1,6 @@
 
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
-import Login from "./pages/login";
+import Login from "./pages/Login";
 import Register from "./pages/Register";
 import StudentDashboard from "./pages/StudentDashboard";
 import StudentProfile from "./pages/StudentProfile";
@@ -11,7 +10,11 @@ import PlacementDriveManagement from "./pages/PlacementDriveManagement";
 import AvailableJobs from "./pages/AvailableJobs";
 import MyApplications from "./pages/MyApplications";
 import TPOApplications from "./pages/TPOApplications";
-
+import TPORecruitmentRounds from "./pages/TPORecruitmentRounds";
+import TPOStudentRoundResults from "./pages/TPOStudentRoundResults";
+import StudentRecruitmentProgress from "./pages/StudentRecruitmentProgress";
+import TPOStudentManagement from "./pages/TPOStudentManagement";
+import TPOStudentDetails from "./pages/TPOStudentDetails";
 
 function App() {
   return (
@@ -28,6 +31,11 @@ function App() {
         <Route path="/jobs" element={<AvailableJobs />} />
         <Route path="/applications" element={<MyApplications />} />
         <Route path="/tpo/applications" element={<TPOApplications />} />
+        <Route path="/tpo/drives/:driveId/rounds" element={<TPORecruitmentRounds />} />
+        <Route path="/tpo/applications/:applicationId/rounds" element={<TPOStudentRoundResults />} />
+        <Route path="/student/applications/:applicationId/rounds" element={<StudentRecruitmentProgress />} />
+        <Route path="/tpo/students" element={<TPOStudentManagement />} />
+        <Route path="/tpo/students/:studentId" element={<TPOStudentDetails />} />
         </Routes>
     </BrowserRouter>
   );

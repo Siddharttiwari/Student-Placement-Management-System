@@ -9,7 +9,7 @@ from .permissions import IsTPO
 from companies.models import Company
 
 from placements.models import PlacementDrive
-
+from placements.models import JobApplication
 class TPODashboardView(APIView):
 
     authentication_classes = [SessionAuthentication]
@@ -23,5 +23,5 @@ class TPODashboardView(APIView):
             "total_students": total_students,
             "total_companies": Company.objects.count(),
             "total_drives": PlacementDrive.objects.count(),
-            "total_applications": 0,
+            "total_applications": JobApplication.objects.count(),
         })

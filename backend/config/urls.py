@@ -28,8 +28,3 @@ urlpatterns = [
     path("api/companies/", include("companies.urls")),
     path("api/placements/", include("placements.urls")),
 ]
-if settings.DEBUG:
-    urlpatterns += static(
-        settings.MEDIA_URL,
-        document_root=settings.MEDIA_ROOT
-    )
