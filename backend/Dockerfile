@@ -29,4 +29,4 @@ RUN DJANGO_SECRET_KEY=build-only-placeholder \
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python -c 'import os,socket; h=os.environ.get(\"DB_HOST\", \"\"); print(\"DB DNS CHECK:\", socket.getaddrinfo(h, None, type=socket.SOCK_STREAM)[0][4][0] if h else \"DB_HOST missing\", flush=True)' || true; exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --access-logfile -"]
+CMD ["sh", "-c", "python -c 'import os,socket; h=os.getenv(\"DB_HOST\", \"\"); print(\"DB_HOST repr:\", repr(h), flush=True); print(\"DNS result:\", socket.getaddrinfo(h, None, type=socket.SOCK_STREAM)[0][4][0], flush=True)' || true; exec gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --access-logfile -"]
