@@ -20,6 +20,10 @@ from .serializers import (
     LoginSerializer,
 )
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @method_decorator(csrf_protect, name='dispatch')
 class StudentRegistrationView(generics.CreateAPIView):
 
@@ -33,54 +37,54 @@ class LoginView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-
-        # Step 1: Validate submitted username and password
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Help Pylance understand validated_data
         data = cast(dict[str, str], serializer.validated_data)
 
-        username = data['username']
-        password = data['password']
+        username = data["username"]
+        password = data["password"]
 
-        # Step 2: Authenticate user credentials
-        authenticated_user = authenticate(
-            request,
-            username=username,
-            password=password
-        )
+        try:
+            authenticated_user = authenticate(
+                request,
+                username=username,
+                password=password
+            )
 
-        if authenticated_user is None:
+            if authenticated_user is None:
+                return Response(
+                    {"detail": "Invalid username or password."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = cast(User, authenticated_user)
+
+            if user.role not in ["STUDENT", "TPO"]:
+                return Response(
+                    {"detail": "Your account role is not supported."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            login(request, user)
+
             return Response(
                 {
-                    'detail': 'Invalid username or password.'
+                    "message": "Login successful",
+                    "username": user.username,
+                    "role": user.role
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_200_OK
             )
 
-        # Help Pylance recognize our custom User model
-        user = cast(User, authenticated_user)
+        except Exception:
+            logger.exception("Unexpected error during login")
 
-        # Step 3: Check student and tpo role
-        if user.role not in ["STUDENT", "TPO"]:
             return Response(
-                {"detail": "Your account role is not supported."},
-                status=403
+                {"detail": "An internal server error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-        # Step 4: Create authenticated session
-        login(request, user)
-
-        # Step 5: Return success response
-        return Response(
-            {
-                'message': 'Login successful',
-                'username': user.username,
-                'role': user.role
-            },
-            status=status.HTTP_200_OK
-        )
+    
 
 
 class LogoutView(APIView):
