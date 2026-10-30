@@ -70,13 +70,36 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     'http://127.0.0.1:5173',
 ]
+CORS_ALLOWED_ORIGINS += [
+    origin.strip()
+    for origin in os.getenv("DJANGO_CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 CORS_ALLOW_CREDENTIALS = True
+
+# Enable HTTPS security when running on Render
+if os.getenv("DJANGO_PRODUCTION", "False").lower() == "true":
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    # Enable only when requests pass through a trusted HTTPS proxy.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     "http://127.0.0.1:8082",
     "http://localhost:8082",
+]
+
+# Additional origins for public deployment
+CSRF_TRUSTED_ORIGINS += [
+    origin.strip()
+    for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
 ]
 
 CSRF_COOKIE_HTTPONLY = False
@@ -121,6 +144,13 @@ DATABASES = {
         },
     }
 }
+
+# Enable verified TLS only for the cloud database.
+if os.getenv("DB_SSL_CA"):
+    DATABASES["default"]["OPTIONS"]["ssl"] = {
+        "ca": os.environ["DB_SSL_CA"],
+    }
+    DATABASES["default"]["OPTIONS"]["ssl_mode"] = "VERIFY_IDENTITY"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
